@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import projectModel from '../models/project.model.js';
 
 export const createProject = async ({ name, userId }) => {
@@ -28,11 +29,75 @@ export const createProject = async ({ name, userId }) => {
     return project;
 };
 
-export const getAllProjectByUserId=async({userId})=>{
-    if(!userId){
+export const getAllProjectByUserId = async ({ userId }) => {
+    if (!userId) {
         throw new Error("User id is required")
     }
 
-    const allUserProjects=await projectModel.findOne({users:userId})
+    const allUserProjects = await projectModel.findOne({ users: userId })
     return allUserProjects;
+}
+
+export const addUserToProject = async ({ projectId, users, userId }) => {
+    if (!projectId) {
+        throw new Error("Project is required")
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(projectId)) {
+        throw new Error("Invalid ProjectId")
+    }
+
+    if (!userId) {
+        throw new Error("User id is required")
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+        throw new Error("Invalid userId")
+    }
+
+    if (!users) {
+        throw new Error("Users are required")
+    }
+
+    if (!Array.isArray(users) || users.some(userId => !mongoose.Types.ObjectId.isValid(userId))) {
+        throw new Error("Invalid userid in users array")
+    }
+
+    const project = await projectModel.findOne({
+        _id: projectId,
+        users: userId
+    })
+
+    if (!project) {
+        throw new Error("User not belong to this project")
+    }
+
+    const updatedProject = await projectModel.findByIdAndUpdate(
+        projectId,
+        {
+            $addToSet: {
+                users: { $each: users }
+            }
+        },
+        { new: true }
+    );
+
+    console.log(updatedProject)
+    return updatedProject;
+}
+
+export const getProjectById =async({projectId})=>{
+    if (!projectId) {
+        throw new Error("Project is required")
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(projectId)) {
+        throw new Error("Invalid ProjectId")
+    }
+
+    const project =projectModel.findOne({
+        _id:projectId
+    }).populate('users')
+    
+    return project;
 }
