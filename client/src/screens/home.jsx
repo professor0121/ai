@@ -55,7 +55,7 @@ const Home = () => {
           onClick={()=>navigate('/project',{ state:{project}})}
             className='project flex flex-col gap-1 px-4 py-2 border cursor-pointer rounded-xl border-slate-300 hover:bg-slate-100'>
               <div>{project.name}</div>
-              <div className='flex gap-1'><span><i class="ri-user-line"></i></span><span>Collaborator</span><span>{project.users.length}</span></div>
+              <div className='flex gap-1'><span><i className="ri-user-line"></i></span><span>Collaborator</span><span>{project.users.length}</span></div>
             </div>
           ))
         }
