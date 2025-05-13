@@ -34,7 +34,7 @@ export const getAllProjectByUserId = async ({ userId }) => {
         throw new Error("User id is required")
     }
 
-    const allUserProjects = await projectModel.findOne({ users: userId })
+    const allUserProjects = await projectModel.find({ users: userId })
     return allUserProjects;
 }
 

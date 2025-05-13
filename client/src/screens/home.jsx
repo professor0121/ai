@@ -1,19 +1,22 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { UserContext } from '../context/user.context';
-import axios from '../config/axios.js'
+import axios from '../config/axios.js';
+import { useNavigate } from 'react-router-dom'
 
 const Home = () => {
+  const navigate=useNavigate();
   const { user } = useContext(UserContext);
   const [isOpenModal, setIsOpenModal] = useState(false);
   const [projectName, setProjectName] = useState('');
-  const token=localStorage.getItem('token');
+  const [project, setProject] = useState([]);
+  const token = localStorage.getItem('token');
   const handleCreateProject = (e) => {
     e.preventDefault();
     // if (!projectName.trim()) return;
     // Handle API call or context update here
-    axios.post('/project/create',{
-      name:projectName
-    }).then((res)=>{
+    axios.post('/project/create', {
+      name: projectName
+    }).then((res) => {
       console.log(res.data)
     })
 
@@ -22,15 +25,40 @@ const Home = () => {
     setProjectName('');
   };
 
+  useEffect(() => {
+    axios.get('/project/all')
+      .then((res) => {
+        // console.log(res.data.projects)
+        setProject(res.data.projects)
+      })
+      .catch(err => {
+        console.log(err)
+      })
+  }, [])
+
+  console.log(project)
+  // console.log
+
+
   return (
     <main className='p-4 relative'>
-      <div className='projects'>
+      <div className='projects flex flex-wrap gap-2'>
         <button
           onClick={() => setIsOpenModal(true)}
-          className='project px-4 py-2 border rounded-xl border-slate-300 hover:bg-slate-100'
+          className='project px-4 py-2 border cursor-pointer rounded-xl border-slate-300 hover:bg-slate-100'
         >
           <i className='ri-link' /> Create Project
         </button>
+        {
+          project.map((project) => (
+            <div key={project._id}
+          onClick={()=>navigate('/project',{ state:{project}})}
+            className='project flex flex-col gap-1 px-4 py-2 border cursor-pointer rounded-xl border-slate-300 hover:bg-slate-100'>
+              <div>{project.name}</div>
+              <div className='flex gap-1'><span><i class="ri-user-line"></i></span><span>Collaborator</span><span>{project.users.length}</span></div>
+            </div>
+          ))
+        }
       </div>
 
       {/* Modal */}
