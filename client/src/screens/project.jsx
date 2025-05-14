@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import axios from '../config/axios';
+import { initializeSocket } from '../config/socket';
 
 
 const project = () => {
@@ -13,10 +14,12 @@ const project = () => {
     const [project, setProject] = useState(location.state.project);
 
     useEffect(() => {
+
+        initializeSocket();
         axios.get(`/project/get-project/${location.state.project._id}`)
             .then(res => {
                 setProject(res.data.project)
-                console.log(res.data)
+                // console.log(res.data)
             }).catch(err => {
                 console.log(err)
             })
