@@ -4,35 +4,47 @@ import http from 'http';
 import app from './app.js';
 import { Server } from 'socket.io';
 import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
+import projectModel from './models/project.model.js'
 
 const PORT = process.env.PORT || 5000;
 
 const server = http.createServer(app);
-const io = new Server(server,{
-  cors:{
-    origin:"*",
-        methods: ['GET', 'POST'],
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+    methods: ['GET', 'POST'],
 
   }
 });
 
 //Socket Middleware for authenticating Socket User...
-io.use( (socket, next) => {
+io.use(async (socket, next) => {
   try {
     const token = socket.handshake.auth?.token || socket.handshake.headers.authorization?.split(' ')[1];
-  if (!token) {
-    return next(new Error("Authentication Error"))
-  }
-  const decoded = jwt.verify(token, process.env.JWT_SECRET)
+    const projectId = socket.handshake.query.projectId;
+    // console.log(projectId)
+    if (!projectId) {
+      return next(new Error("Project Id Is Required"))
+    }
+    if (!mongoose.Types.ObjectId.isValid(projectId)) {
+      return next(new Error("Invalid Project Id"))
+    }
 
-  if (!decoded) {
-    return next(new Error("Authentication Error"))
-  }
+    socket.project = await projectModel.findById(projectId);
+    if (!token) {
+      return next(new Error("Authentication Error"))
+    }
+    const decoded = jwt.verify(token, process.env.JWT_SECRET)
 
-  socket.user = decoded;
+    if (!decoded) {
+      return next(new Error("Authentication Error"))
+    }
+
+    socket.user = decoded;
     next();
   } catch (error) {
-console.log(error)
+    console.log(error)
   }
 })
 
@@ -40,8 +52,20 @@ console.log(error)
 
 io.on('connection', socket => {
   console.log("User Is Connected")
-  // socket.on('event', data => { /* … */ });
-  // socket.on('disconnect', () => { /* … */ });
+  socket.roomId=socket.project._id.toString()
+  console.log(socket.roomId)
+
+  socket.join(socket.roomId)
+  // console.log(socket.project._id)
+
+  socket.on('project-message', data => {
+    console.log(data)
+    socket.broadcast.to(socket.roomId).emit('project-message', data)
+  })
+
+
+  socket.on('event', data => { /* … */ });
+  socket.on('disconnect', () => { /* … */ });
 });
 
 server.listen(PORT, () => {

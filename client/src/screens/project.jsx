@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect ,useContext} from 'react';
 import { useLocation } from 'react-router-dom';
 import axios from '../config/axios';
-import { initializeSocket } from '../config/socket';
+import { initializeSocket, recieveMessage, sendMessage } from '../config/socket';
+import { UserContext } from '../context/user.context';
 
 
 const project = () => {
@@ -12,10 +13,18 @@ const project = () => {
     const [loading, setLoading] = useState(false);
     const [selectedUserId, setSelectedUserId] = useState([])
     const [project, setProject] = useState(location.state.project);
+    const [message, setMessage] = useState('');
+    const {user}=useContext(UserContext);
 
     useEffect(() => {
 
-        initializeSocket();
+        initializeSocket(project._id);
+
+        recieveMessage('project-message', data => {
+            console.log(data)
+        })
+
+
         axios.get(`/project/get-project/${location.state.project._id}`)
             .then(res => {
                 setProject(res.data.project)
@@ -57,6 +66,15 @@ const project = () => {
         })
 
     }
+
+    function send(){
+        sendMessage('project-message',{
+            message,
+            sender:user._id
+        })
+        // console.log(message,user)
+        setMessage('')
+    }
     // console.log(selectedUserId)
 
     // console.log(location.state)
@@ -85,8 +103,13 @@ const project = () => {
                         </div>
                     </div>
                     <div className="input-field flex justify-between px-4 py-3 bg-slate-50">
-                        <input type="text" placeholder='Message now...' className='w-full appearance-none border-none outline-none bg-transparent px-2 m-0 shadow-none ring-0' />
-                        <button className='flex gap-2 border border-slate-500 px-4 py-1 rounded-xl cursor-pointer'>
+                        <input
+                        value={message}
+                        onChange={(e)=>setMessage(e.target.value)}
+                        type="text" placeholder='Message now...' className='w-full appearance-none border-none outline-none bg-transparent px-2 m-0 shadow-none ring-0' />
+                        <button
+                        onClick={send}
+                        className='flex gap-2 border border-slate-500 px-4 py-1 rounded-xl cursor-pointer'>
                             <span>Send</span>
                             <i className="ri-send-plane-2-fill"></i>
                         </button>
