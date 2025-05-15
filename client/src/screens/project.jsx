@@ -1,4 +1,4 @@
-import React, { useState, useEffect ,useContext} from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useLocation } from 'react-router-dom';
 import axios from '../config/axios';
 import { initializeSocket, recieveMessage, sendMessage } from '../config/socket';
@@ -14,7 +14,8 @@ const project = () => {
     const [selectedUserId, setSelectedUserId] = useState([])
     const [project, setProject] = useState(location.state.project);
     const [message, setMessage] = useState('');
-    const {user}=useContext(UserContext);
+    const { user } = useContext(UserContext);
+    const messageBox = React.createRef();
 
     useEffect(() => {
 
@@ -22,6 +23,7 @@ const project = () => {
 
         recieveMessage('project-message', data => {
             console.log(data)
+            appendIncommingMessage(data);
         })
 
 
@@ -67,21 +69,50 @@ const project = () => {
 
     }
 
-    function send(){
-        sendMessage('project-message',{
+    function send() {
+        sendMessage('project-message', {
             message,
-            sender:user._id
+            sender: user
         })
         // console.log(message,user)
+        appendOutgoingMessage(message)
         setMessage('')
     }
-    // console.log(selectedUserId)
 
-    // console.log(location.state)
+
+    function appendIncommingMessage(messageObject) {
+        const messageBox = document.querySelector('.message-box')
+
+        const message = document.createElement('div');
+        message.classList.add('message', 'max-w-72', 'flex', 'flex-col', 'p-2', 'bg-slate-300', 'w-fit', 'rounded-md');
+        message.innerHTML = `
+        <small className='opacity-50 text-xs'>${messageObject.sender.email}</small>
+        <p className='text-sm'>${messageObject.message}</p>
+        `;
+        messageBox.appendChild(message);
+            messageBox.scrollTop = messageBox.scrollHeight; // Auto-scroll
+
+
+    }
+
+    function appendOutgoingMessage(messageObject) {
+        const messageBox = document.querySelector('.message-box')
+
+        const newmessage = document.createElement('div');
+        newmessage.classList.add('ml-auto', 'message', 'max-w-72', 'flex', 'flex-col', 'p-2', 'bg-slate-300', 'w-fit', 'rounded-md');
+        newmessage.innerHTML = `
+        <small className='opacity-50 text-xs'>${user.email}</small>
+        <p className='text-sm'>${message}</p>
+        `;
+        messageBox.appendChild(newmessage);
+            messageBox.scrollTop = messageBox.scrollHeight; // Auto-scroll
+
+
+    }
     return (
         <main className='h-screen w-full flex bg-white'>
-            <section className='flex flex-col left h-full min-w-96 bg-slate-200'>
-                <header className='flex justify-between px-4 py-3 bg-slate-100'>
+            <section className=' flex flex-col left h-screen min-w-96 bg-slate-200'>
+                <header className='flex w-full justify-between px-4 py-3 bg-slate-100 absolute top-0'>
                     <button className='p-2 cursor-pointer flex gap-2 items-center'
                         onClick={() => setIsOpenModal(!isOpenModal)}>
                         <i className='ri-add-fill'></i>
@@ -92,24 +123,18 @@ const project = () => {
                     </button>
                 </header>
                 <div className="coversation-area flex flex-col flex-grow">
-                    <div className="message-box flex-grow flex flex-col py-4 px-2 gap-2">
-                        <div className="incoming-message max-w-72 flex flex-col flex-wrap bg-slate-300 p-2 w-fit rounded-md">
-                            <small className='text-xs opacity-50' >example@gmail.com</small>
-                            <p className='text-sm'>Lorem ipsum dolor sit d. Lorem ipsum dolor, sit amet consectetur adipisicing elit. Possimus, dolorem.</p>
-                        </div>
-                        <div className="ml-auto max-w-72 outgoing-message flex flex-col bg-slate-300 p-2 w-fit rounded-md">
-                            <small className='text-xs opacity-50' >example@gmail.com</small>
-                            <p className='text-sm'>Lorem ipsum dolor sit amet.</p>
-                        </div>
+                    <div
+                        ref={messageBox}
+                        className="message-box flex-grow flex flex-col py-4 px-2 gap-2 overflow-auto">
                     </div>
-                    <div className="input-field flex justify-between px-4 py-3 bg-slate-50">
+                    <div className="input-field flex justify-between px-4 py-3 bg-slate-50 absolute bottom-0 w-full">
                         <input
-                        value={message}
-                        onChange={(e)=>setMessage(e.target.value)}
-                        type="text" placeholder='Message now...' className='w-full appearance-none border-none outline-none bg-transparent px-2 m-0 shadow-none ring-0' />
+                            value={message}
+                            onChange={(e) => setMessage(e.target.value)}
+                            type="text" placeholder='Message now...' className='w-full appearance-none border-none outline-none bg-transparent px-2 m-0 shadow-none ring-0' />
                         <button
-                        onClick={send}
-                        className='flex gap-2 border border-slate-500 px-4 py-1 rounded-xl cursor-pointer'>
+                            onClick={send}
+                            className='flex gap-2 border border-slate-500 px-4 py-1 rounded-xl cursor-pointer'>
                             <span>Send</span>
                             <i className="ri-send-plane-2-fill"></i>
                         </button>
