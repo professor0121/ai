@@ -64,8 +64,10 @@ io.on('connection', socket => {
   })
 
 
-  socket.on('event', data => { /* … */ });
-  socket.on('disconnect', () => { /* … */ });
+  socket.on('disconnect', () => { 
+    console.log("User is Disconnected");
+    socket.leave(socket.roomId)
+   });
 });
 
 server.listen(PORT, () => {
