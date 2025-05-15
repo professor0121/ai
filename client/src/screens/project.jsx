@@ -70,13 +70,13 @@ const project = () => {
     }
 
     function send() {
-        sendMessage('project-message', {
+        if(message){sendMessage('project-message', {
             message,
             sender: user
         })
         // console.log(message,user)
         appendOutgoingMessage(message)
-        setMessage('')
+        setMessage('')}
     }
 
 
@@ -112,7 +112,7 @@ const project = () => {
     return (
         <main className='h-screen w-full flex bg-white'>
             <section className=' flex flex-col left h-screen min-w-96 bg-slate-200'>
-                <header className='flex w-full justify-between px-4 py-3 bg-slate-100 absolute top-0'>
+                <header className='flex w-full justify-between px-4 py-3 h-16 bg-slate-100 top-0'>
                     <button className='p-2 cursor-pointer flex gap-2 items-center'
                         onClick={() => setIsOpenModal(!isOpenModal)}>
                         <i className='ri-add-fill'></i>
@@ -122,12 +122,12 @@ const project = () => {
                         <i className="ri-group-fill"></i>
                     </button>
                 </header>
-                <div className="coversation-area flex flex-col flex-grow">
+                <div className="coversation-area flex flex-col h-[91%]">
                     <div
                         ref={messageBox}
-                        className="message-box flex-grow flex flex-col py-4 px-2 gap-2 overflow-auto">
+                        className="message-box flex-grow flex flex-col py-4 px-2 gap-2 overflow-auto no-scrollbar">
                     </div>
-                    <div className="input-field flex justify-between px-4 py-3 bg-slate-50 absolute bottom-0 w-full">
+                    <div className="input-field flex justify-between px-4 py-3 h-16 bg-slate-50 bottom-0 w-full">
                         <input
                             value={message}
                             onChange={(e) => setMessage(e.target.value)}
