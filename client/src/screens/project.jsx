@@ -1,197 +1,201 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import axios from '../config/axios';
 import { initializeSocket, recieveMessage, sendMessage } from '../config/socket';
 import { UserContext } from '../context/user.context';
+import Markdown from 'markdown-to-jsx';
+import hljs from 'highlight.js';
+import 'highlight.js/styles/github.css'; // or any style you like
 
 
-const project = () => {
+
+const Project = () => {
     const location = useLocation();
+    const { user } = useContext(UserContext);
     const [isPanelOpen, setIsPanelOpen] = useState(false);
     const [isOpenModal, setIsOpenModal] = useState(false);
     const [users, setUsers] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [selectedUserId, setSelectedUserId] = useState([])
+    const [selectedUserIds, setSelectedUserIds] = useState([]);
     const [project, setProject] = useState(location.state.project);
     const [message, setMessage] = useState('');
-    const { user } = useContext(UserContext);
-    const messageBox = React.createRef();
+    const [messages, setMessages] = useState([]);
+    const messageBoxRef = useRef(null);
+    const codeContainerRef = useRef(null);
+
+
 
     useEffect(() => {
-
         initializeSocket(project._id);
 
-        recieveMessage('project-message', data => {
-            console.log(data)
-            appendIncommingMessage(data);
-        })
+        recieveMessage('project-message', (data) => {
+            setMessages((prev) => [...prev, data]);
+        });
 
-
-        axios.get(`/project/get-project/${location.state.project._id}`)
-            .then(res => {
-                setProject(res.data.project)
-                // console.log(res.data)
-            }).catch(err => {
-                console.log(err)
-            })
+        axios.get(`/project/get-project/${project._id}`)
+            .then((res) => setProject(res.data.project))
+            .catch(console.error);
 
         axios.get('/user/all')
-            .then((res) => {
-                setUsers(res.data)
-            }).catch(err => {
-                console.log(err)
-            })
+            .then((res) => setUsers(res.data))
+            .catch(console.error);
     }, []);
 
-    function addCollaborator() {
-        axios.put('/project/add-user', {
-            projectId: location.state.project._id,
-            users: Array.from(selectedUserId)
-        }).then(res => {
-            console.log(res.data);
-            setIsOpenModal(false)
-        }).catch(err => {
-            console.log(err)
-        })
-    }
+    useEffect(() => {
+        if (messageBoxRef.current) {
+            messageBoxRef.current.scrollTop = messageBoxRef.current.scrollHeight;
+        }
+
+        if (codeContainerRef.current) {
+            const blocks = codeContainerRef.current.querySelectorAll('pre code');
+            blocks.forEach((block) => {
+                hljs.highlightElement(block);
+            });
+        }
+        if (messageBoxRef.current) {
+            messageBoxRef.current.scrollTop = messageBoxRef.current.scrollHeight;
+        }
+    }, [messages]);
 
     const handleUserClick = (id) => {
+        setSelectedUserIds((prev) =>
+            prev.includes(id) ? prev.filter(uid => uid !== id) : [...prev, id]
+        );
+    };
 
-        setSelectedUserId(prevSelectedUserId => {
-            const newSelectedUserId = new Set(prevSelectedUserId);
-            if (newSelectedUserId.has(id)) {
-                newSelectedUserId.delete(id)
-            } else {
-                newSelectedUserId.add(id)
-            }
-            return newSelectedUserId;
-        })
+    const addCollaborator = () => {
+        axios.put('/project/add-user', {
+            projectId: project._id,
+            users: selectedUserIds,
+        }).then(() => setIsOpenModal(false))
+            .catch(console.error);
+    };
 
-    }
+    const send = () => {
+        if (!message) return;
 
-    function send() {
-        if(message){sendMessage('project-message', {
+        const newMsg = {
             message,
-            sender: user
-        })
-        // console.log(message,user)
-        appendOutgoingMessage(message)
-        setMessage('')}
-    }
+            sender: user,
+        };
 
+        sendMessage('project-message', newMsg);
+        setMessages((prev) => [...prev, newMsg]);
+        setMessage('');
+    };
 
-    function appendIncommingMessage(messageObject) {
-        const messageBox = document.querySelector('.message-box')
-
-        const message = document.createElement('div');
-        message.classList.add('message', 'max-w-72', 'flex', 'flex-col', 'p-2', 'bg-slate-300', 'w-fit', 'rounded-md');
-        message.innerHTML = `
-        <small className='opacity-50 text-xs'>${messageObject.sender.email}</small>
-        <p className='text-sm'>${messageObject.message}</p>
-        `;
-        messageBox.appendChild(message);
-            messageBox.scrollTop = messageBox.scrollHeight; // Auto-scroll
-
-
-    }
-
-    function appendOutgoingMessage(messageObject) {
-        const messageBox = document.querySelector('.message-box')
-
-        const newmessage = document.createElement('div');
-        newmessage.classList.add('ml-auto', 'message', 'max-w-72', 'flex', 'flex-col', 'p-2', 'bg-slate-300', 'w-fit', 'rounded-md');
-        newmessage.innerHTML = `
-        <small className='opacity-50 text-xs'>${user.email}</small>
-        <p className='text-sm'>${message}</p>
-        `;
-        messageBox.appendChild(newmessage);
-            messageBox.scrollTop = messageBox.scrollHeight; // Auto-scroll
-
-
-    }
     return (
-        <main className='h-screen w-full flex bg-white'>
-            <section className=' flex flex-col left h-screen min-w-96 bg-slate-200'>
-                <header className='flex w-full justify-between px-4 py-3 h-16 bg-slate-100 top-0'>
-                    <button className='p-2 cursor-pointer flex gap-2 items-center'
-                        onClick={() => setIsOpenModal(!isOpenModal)}>
-                        <i className='ri-add-fill'></i>
-                        <p className='text-sm'>Add User</p>
+        <main className="h-screen w-full flex bg-white">
+            {/* LEFT PANEL */}
+            <section className="flex flex-col left h-screen min-w-96 bg-slate-200">
+                <header className="flex w-full justify-between px-4 py-3 h-16 bg-slate-100">
+                    <button onClick={() => setIsOpenModal(true)} className="p-2 flex gap-2 items-center">
+                        <i className="ri-add-fill" />
+                        <span className="text-sm">Add User</span>
                     </button>
-                    <button className='p-2 cursor-pointer ' onClick={() => setIsPanelOpen(!isPanelOpen)}>
-                        <i className="ri-group-fill"></i>
+                    <button onClick={() => setIsPanelOpen(!isPanelOpen)} className="p-2">
+                        <i className="ri-group-fill" />
                     </button>
                 </header>
+
+                {/* CHAT AREA */}
                 <div className="coversation-area flex flex-col h-[91%]">
                     <div
-                        ref={messageBox}
-                        className="message-box flex-grow flex flex-col py-4 px-2 gap-2 overflow-auto no-scrollbar">
+                        ref={(el) => {
+                            messageBoxRef.current = el;
+                            codeContainerRef.current = el;
+                        }}
+                        className="message-box flex-grow flex flex-col py-4 px-2 gap-2 overflow-auto no-scrollbar"
+                    >
+                        {messages.map((msg, i) => (
+                            <div
+                                key={i}
+                                className={`message max-w-72 flex flex-col p-2 w-fit rounded-md ${msg.sender._id === user._id ? 'ml-auto bg-blue-300' : 'bg-slate-300'
+                                    }`}
+                            >
+                                <small className="opacity-50 text-xs">{msg.sender.email}</small>
+                                <div className='overflow-auto'>
+                                    <Markdown className="text-sm overflow-auto">{msg.message}</Markdown>
+
+                                </div>
+                            </div>
+                        ))}
+
                     </div>
-                    <div className="input-field flex justify-between px-4 py-3 h-16 bg-slate-50 bottom-0 w-full">
+
+                    {/* INPUT */}
+                    <div className="input-field flex justify-between px-4 py-3 h-16 bg-slate-50">
                         <input
                             value={message}
                             onChange={(e) => setMessage(e.target.value)}
-                            type="text" placeholder='Message now...' className='w-full appearance-none border-none outline-none bg-transparent px-2 m-0 shadow-none ring-0' />
-                        <button
-                            onClick={send}
-                            className='flex gap-2 border border-slate-500 px-4 py-1 rounded-xl cursor-pointer'>
+                            type="text"
+                            placeholder="Message now..."
+                            className="w-full border-none outline-none bg-transparent px-2"
+                        />
+                        <button onClick={send} className="flex gap-2 border border-slate-500 px-4 py-1 rounded-xl">
                             <span>Send</span>
-                            <i className="ri-send-plane-2-fill"></i>
+                            <i className="ri-send-plane-2-fill" />
                         </button>
                     </div>
                 </div>
-                <div className={`sidePanel flex flex-col gap-2 w-96 h-full absolute transition-all ${isPanelOpen ? 'translate-x-0' : '-translate-x-full'} top-0 bg-slate-200`}>
-                    <header className='flex justify-between px-4 py-3 bg-slate-100 items-center'>
+
+                {/* SIDE PANEL */}
+                <div
+                    className={`sidePanel flex flex-col gap-2 w-96 h-full absolute top-0 bg-slate-200 transition-transform ${isPanelOpen ? 'translate-x-0' : '-translate-x-full'
+                        }`}
+                >
+                    <header className="flex justify-between px-4 py-3 bg-slate-100 items-center">
                         <h1>Collaborators</h1>
-                        <button className='p-2 cursor-pointer ' onClick={() => setIsPanelOpen(!isPanelOpen)}>
-                            <i className="ri-close-line"></i>
+                        <button onClick={() => setIsPanelOpen(false)} className="p-2">
+                            <i className="ri-close-line" />
                         </button>
                     </header>
                     <div className="colleberators flex flex-col gap-2">
-                        {
-                            project.users.map((user) => (
-                                <div key={user._id} className='flex gap-4 items-center p-2 cursor-pointer hover:bg-slate-300'>
-                                    <div className='flex justify-center items-center w-12 h-12 bg-slate-500 rounded-full'>
-                                        <i className="ri-user-fill text-white text-lg"></i>
-                                    </div>
-                                    <h1 className='text-[18px]'>{user.email}</h1>
+                        {project.users.map((user) => (
+                            <div key={user._id} className="flex gap-4 items-center p-2 hover:bg-slate-300 cursor-pointer">
+                                <div className="w-12 h-12 flex items-center justify-center bg-slate-500 rounded-full">
+                                    <i className="ri-user-fill text-white text-lg" />
                                 </div>
-                            ))
-                        }
-
+                                <h1 className="text-lg">{user.email}</h1>
+                            </div>
+                        ))}
                     </div>
                 </div>
             </section>
+
+            {/* MODAL */}
             {isOpenModal && (
-                <div className="fixed inset-0 flex items-center justify-center">
-                    <div className="flex flex-col h-96 w-96 bg-slate-100">
-                        <header className='flex justify-between px-4 py-3 bg-slate-300'>
-                            <div></div>
+                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-25">
+                    <div className="flex flex-col h-96 w-96 bg-slate-100 rounded-lg overflow-hidden">
+                        <header className="flex justify-between px-4 py-3 bg-slate-300">
+                            <div />
                             <h1>Add Users</h1>
-                            <button className='cursor-pointer ' onClick={() => setIsOpenModal(!isOpenModal)}>
-                                <i className="ri-close-line"></i>
+                            <button onClick={() => setIsOpenModal(false)}>
+                                <i className="ri-close-line" />
                             </button>
                         </header>
-                        <div className='flex-grow relative flex flex-col overflow-auto'>
-                            {
-                                users.map(user => (
-                                    <div key={user._id} className={`flex gap-4 items-center p-2 ${Array.from(selectedUserId).indexOf(user._id) != -1 ? 'bg-slate-200' : ''} cursor-pointer`} onClick={() => handleUserClick(user._id)}>
-                                        <div className='flex justify-center items-center w-fit h-fit p-6 bg-slate-500 rounded-[100%]'><i className="ri-user-fill absolute"></i></div>
-                                        <h1 className='text-[18px]'>{user.email}</h1>
+                        <div className="flex-grow overflow-auto">
+                            {users.map((u) => (
+                                <div
+                                    key={u._id}
+                                    className={`flex gap-4 items-center p-2 ${selectedUserIds.includes(u._id) ? 'bg-slate-200' : ''
+                                        } cursor-pointer`}
+                                    onClick={() => handleUserClick(u._id)}
+                                >
+                                    <div className="w-12 h-12 flex items-center justify-center bg-slate-500 rounded-full">
+                                        <i className="ri-user-fill text-white" />
                                     </div>
-                                ))
-                            }
+                                    <h1 className="text-base">{u.email}</h1>
+                                </div>
+                            ))}
                         </div>
-                        <div className='h-4 w-full'>
-                            <button onClick={addCollaborator} className='cursor-pointer px-4 py-2 w-full bg-blue-500'>Add Colleeborator</button>
-                        </div>
+                        <button onClick={addCollaborator} className="p-3 bg-blue-500 text-white font-semibold">
+                            Add Collaborator
+                        </button>
                     </div>
                 </div>
-
             )}
-
         </main>
-    )
-}
+    );
+};
 
-export default project
+export default Project;

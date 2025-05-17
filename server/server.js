@@ -62,21 +62,22 @@ io.on('connection', socket => {
   socket.on('project-message',async data => {
     const message=data.message;
     const aiIsPresentInMessage=message.includes('@abhishek');
+    socket.broadcast.to(socket.roomId).emit('project-message', data)
+
     if(aiIsPresentInMessage){
      const prompt =  message.replace("@abhishek",'');
      const result= await generateResult(prompt);
 
      io.to(socket.roomId).emit('project-message',{
-      message:result,
-      sender :{
-        _id:'abhishek',
-        email:"abhishek"
-      }
+       sender :{
+         _id:'abhishek',
+         email:"abhishek"
+       },
+      message:result
      })
 
     }
     console.log(data)
-    socket.broadcast.to(socket.roomId).emit('project-message', data)
   })
 
 
