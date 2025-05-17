@@ -5,6 +5,7 @@ import Register from '../screens/register';
 import Home from '../screens/home';
 import Project from "../screens/project";
 import UserAuth from "../auth/userAuth";
+import Test from "../screens/test"
 
 const AppRoutes = () => {
   return (
@@ -14,6 +15,7 @@ const AppRoutes = () => {
             <Route path="/login" element={<Login/>}/>
             <Route path="/register" element={<Register/>}/>
             <Route path="/project" element={<UserAuth><Project/></UserAuth>}/>
+            <Route path="/test" element={<Test/>}/>
         </Routes>
     </BrowserRouter>
   )
