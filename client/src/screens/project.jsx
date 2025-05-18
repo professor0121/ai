@@ -21,6 +21,9 @@ const Project = () => {
     const [messages, setMessages] = useState([]);
     const messageBoxRef = useRef(null);
     const codeContainerRef = useRef(null);
+    const [fileTree, setFileTree] = useState({})
+    const [currencFile, setCurrencFile] = useState(null)
+    const [openFiles, setOpenFiles] = useState([])
 
 
 
@@ -28,6 +31,11 @@ const Project = () => {
         initializeSocket(project._id);
 
         recieveMessage('project-message', (data) => {
+            console.log(JSON.stringify(data.message))
+            // const messageData=JSON.parse(data.message);
+            // if(messageData.fileTree){
+            //     setFileTree(messageData.fileTree)
+            // }
             setMessages((prev) => [...prev, data]);
         });
 
@@ -160,6 +168,64 @@ const Project = () => {
                         ))}
                     </div>
                 </div>
+            </section>
+
+            {/*Code Editor*/}
+            <section className='RightSide flex h-screen w-full bg-gray-800'>
+                <div className='fileTree-exprlorer h-screen min-w-40 max-w-52 p-2'>
+                    <div className='fileTree flex flex-col gap-2 '>
+                        {
+                            Object.keys(fileTree).map((file, index) => (
+                                <button
+                                    onClick={() => {
+                                        setCurrencFile(file),
+                                        setOpenFiles([...new Set([ ...openFiles,file])])
+                                    }}
+                                    key={index} className='treeElement flex items-center gap-2  w-full'>
+                                    <p className='cursor-pointer font-semibold text-lg text-[#ffffff]'>{file}</p>
+                                </button>
+                            ))
+                        }
+                    </div>
+                </div>
+                <div className=" w-px bg-gray-100" />
+                {/* code editor */}
+                {
+                    currencFile && (
+                        <div className='flex flex-col codeEditor text-blue-50 h-full w-full'>
+                            <div className='top flex gap-2'>
+                                {
+                                    openFiles.map((file,index)=>(
+                                        <button
+                                        onClick={()=>setCurrencFile(file)}
+                                        className='font-semibold lext-lg cursor-pointer w-fit px-2 py-1 bg-gray-500'>
+                                            {file}
+                                        </button>
+                                    ))
+                                }
+                            </div>
+                            <div className="h-px bg-gray-100" />
+                            <div className='Bottom flex flex-grow'>
+                                {
+                                    fileTree[currencFile]&&(
+                                        <textarea 
+                                        value={fileTree[currencFile].contents}
+                                        onChange={(e)=>{
+                                            setFileTree({
+                                                ...fileTree,[currencFile]:{
+                                                    contents:e.target.value
+                                                }
+                                            })
+                                        }}
+                                        className='w-full h-full p-4 border-none outline-none bg-transparent'
+                                        ></textarea>
+                                    )
+                                }
+                            </div>
+                        </div>
+                    )
+                }
+
             </section>
 
             {/* MODAL */}
