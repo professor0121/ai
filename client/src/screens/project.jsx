@@ -21,7 +21,11 @@ const Project = () => {
     const [messages, setMessages] = useState([]);
     const messageBoxRef = useRef(null);
     const codeContainerRef = useRef(null);
-    const [fileTree, setFileTree] = useState({})
+    const [fileTree, setFileTree] = useState({
+        "app.js":{
+            contents:"const data;"
+        }
+    })
     const [currencFile, setCurrencFile] = useState(null)
     const [openFiles, setOpenFiles] = useState([])
 
